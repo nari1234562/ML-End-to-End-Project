@@ -3,10 +3,11 @@ import sys
 
 import numpy as np 
 import pandas as pd
+import dill
 import pickle
 from sklearn.metrics import r2_score
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
 from src.exception import CustomException
 
 def save_object(file_path, obj):
@@ -21,49 +22,36 @@ def save_object(file_path, obj):
     except Exception as e:
         raise CustomException(e, sys)
     
-    
-def evaluate_models(X_train, y_train, X_test, y_test, models, param):
+def evaluate_models(X_train, y_train,X_test,y_test,models,param):
     try:
         report = {}
 
         for i in range(len(list(models))):
-            model_name = list(models.keys())[i]
             model = list(models.values())[i]
-            para = param[model_name]
+            para=param[list(models.keys())[i]]
 
-            gs = GridSearchCV(model, para, cv=3)
-            gs.fit(X_train, y_train)
+            gs = GridSearchCV(model,para,cv=3)
+            gs.fit(X_train,y_train)
 
             model.set_params(**gs.best_params_)
-            model.fit(X_train, y_train)
+            model.fit(X_train,y_train)
+
+            #model.fit(X_train, y_train)  # Train model
 
             y_train_pred = model.predict(X_train)
+
             y_test_pred = model.predict(X_test)
 
-            # Metrics
-            train_r2 = r2_score(y_train, y_train_pred)
-            test_r2 = r2_score(y_test, y_test_pred)
+            train_model_score = r2_score(y_train, y_train_pred)
 
-            train_mse = mean_squared_error(y_train, y_train_pred)
-            test_mse = mean_squared_error(y_test, y_test_pred)
+            test_model_score = r2_score(y_test, y_test_pred)
 
-            train_mae = mean_absolute_error(y_train, y_train_pred)
-            test_mae = mean_absolute_error(y_test, y_test_pred)
-
-            report[model_name] = {
-                "train_r2": train_r2,
-                "test_r2": test_r2,
-                "train_mse": train_mse,
-                "test_mse": test_mse,
-                "train_mae": train_mae,
-                "test_mae": test_mae
-            }
+            report[list(models.keys())[i]] = test_model_score
 
         return report
 
     except Exception as e:
         raise CustomException(e, sys)
-    
     
 def load_object(file_path):
     try:
@@ -71,4 +59,4 @@ def load_object(file_path):
             return pickle.load(file_obj)
 
     except Exception as e:
-        raise CustomException(e, sys)    
+        raise CustomException(e, sys)
